@@ -1,0 +1,4 @@
+projects:
+  nbtstreams:
+    type: library
+    model: virion

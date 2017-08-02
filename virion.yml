@@ -1,0 +1,5 @@
+name: nbtstreams
+version: 0.0.0
+antigen: sofe\nbtstreams
+php: [7.0]
+author: SOFe
