@@ -19,6 +19,9 @@ namespace sofe\nbtstreams;
 
 use pocketmine\utils\Binary;
 
+/** @noinspection PhpInconsistentReturnPointsInspection */
+
+/** @noinspection PhpInconsistentReturnPointsInspection */
 class NbtWriter implements NbtTagConsts{
 	private $os;
 
@@ -79,7 +82,7 @@ class NbtWriter implements NbtTagConsts{
 		assert(!isset($this->name), "Writing name twice without writing the value");
 		$this->name = $name;
 	}
-	
+
 
 	public function writeByte(int $byte) : NbtWriter{
 		$this->writeTagHeader(self::TAG_Byte);
@@ -123,31 +126,60 @@ class NbtWriter implements NbtTagConsts{
 		return $this;
 	}
 
-	public function writeByteArrayFromFile(string $file) : NbtWriter{
+	public function writeByteArrayFromFile(string $file){
+		$this->writeByteArrayFromStream(filesize($file), $fh = fopen($file, "rb"));
+		fclose($fh);
+		return $this;
+	}
+
+	/**
+	 * @param int      $expectedSize
+	 * @param resource $fh The calling context is responsible for closing the stream.
+	 *
+	 * @return NbtWriter
+	 */
+	public function writeByteArrayFromStream(int $expectedSize, $fh) : NbtWriter{
 		$this->writeTagHeader(self::TAG_ByteArray);
-		gzwrite($this->os, Binary::writeInt($expectedSize = filesize($file)));
-		$fh = fopen($file, "rb");
+		gzwrite($this->os, Binary::writeInt($expectedSize));
 		$size = 0;
 		while(!feof($fh)){
 			gzwrite($this->os, $buffer = fread($fh, 2048));
 			$size += strlen($buffer);
 		}
 		assert($expectedSize === $size);
+		return $this;
+	}
+
+	/** @noinspection PhpInconsistentReturnPointsInspection
+	 * @param string $file
+	 *
+	 * @return \Generator
+	 */
+	public function startByteArrayWriterFromFile(string $file) : \Generator{
+		$filesize = filesize($file);
+		$fh = fopen($file, "wb");
+		$generator = $this->generateByteArrayWriter($filesize);
+		while(!feof($fh)){
+			$generator->send(fread($fh, (yield) ?? 2048));
+		}
 		fclose($fh);
 		return $this;
 	}
 
-	public function startByteArrayWriterFromFile(string $file) : \Generator{
+	/** @noinspection PhpInconsistentReturnPointsInspection
+	 * @param int $size
+	 *
+	 * @return \Generator
+	 */
+	public function generateByteArrayWriter(int $size) : \Generator{
 		$this->writeTagHeader(self::TAG_ByteArray);
-		gzwrite($this->os, $expectedSize = Binary::writeInt(filesize($file)));
-		$fh = fopen($file, "rb");
-		while(!feof($fh)){
-			$bufferSize = (yield) ?? 1;
-			$buffer = fread($fh, $bufferSize);
-			if($bufferSize === strlen($buffer))
+		gzwrite($this->os, $size);
+		while(true){
+			$buffer = yield $size;
+			gzwrite($this->os, $buffer);
+			$size -= strlen($buffer);
 		}
-		fclose($fh);
-//		does not return $this to prevent confusion
+		return $this;
 	}
 
 	public function writeString(string $string) : NbtWriter{

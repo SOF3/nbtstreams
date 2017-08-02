@@ -35,20 +35,123 @@ class NbtReader implements NbtTagConsts{
 	}
 
 
-	public function readName(string &$type = null) : string{
+	public function readName(string &$type = null){
 		assert($this->surfaceContext[self::CONTEXT_INDEX_CONTEXT_TYPE] === self::CONTEXT_COMPOUND, "Cannot read name for list context entries");
+		assert(!isset($this->surfaceContext[self::CONTEXT_INDEX_TAG_TYPE]), "Cannot read name twice name");
+		$type = $this->peek(1);
+		if($type === self::TAG_End){
+			return null;
+		}
 		$this->surfaceContext[self::CONTEXT_INDEX_TAG_TYPE] = $type = $this->read(1);
 		return $this->internalReadString();
 	}
 
+	public function startCompound(){
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Compound, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		$this->pushContext([self::CONTEXT_COMPOUND, null]);
+	}
+
+	public function endCompound(){
+		assert($this->peek(1) === self::TAG_End);
+		$this->read(1);
+		$this->popContext(self::CONTEXT_COMPOUND);
+	}
+
+	public function startList(){
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Long, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		$subtype = $this->read(1);
+		$size = Binary::readInt($this->read(4));
+		$this->pushContext([self::CONTEXT_LIST, $subtype, $size]);
+	}
+
+	public function endList(){
+		assert($this->surfaceContext[self::CONTEXT_INDEX_TAG_COUNT] === 0, "Did not read all list tag entries");
+		$this->popContext(self::CONTEXT_LIST);
+	}
+
 	public function readByte() : int{
-
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Byte, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return ord($this->read(1));
 	}
 
-
-	public function readValue(){
-		return $this->readValueByType($this->consumeExpectedType());
+	public function readShort() : int{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Short, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return Binary::readSignedShort($this->read(2));
 	}
+
+	public function readInt() : int{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Int, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return Binary::readInt($this->read(4));
+	}
+
+	public function readLong() : int{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Long, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return Binary::readLong($this->read(8));
+	}
+
+	public function readFloat() : float{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Float, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return Binary::readFloat($this->read(4));
+	}
+
+	public function readDouble() : float{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_Double, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return Binary::readDouble($this->read(8));
+	}
+
+	public function readByteArray() : string{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_ByteArray, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		$size = Binary::readInt($this->read(4));
+		return $this->read($size);
+	}
+
+	public function generateByteArrayReader(int $bufferSize = 2048) : \Generator{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_ByteArray, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		$size = Binary::readInt($this->read(4));
+		for($i = $size; $i > 0; $i -= strlen($buffer)){
+			$buffer = $this->read(min($i, $bufferSize));
+			yield $buffer;
+		}
+	}
+
+	public function readString() : string{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_String, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		return $this->internalReadString();
+	}
+
+	public function readIntArray() : array{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_IntArray, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		$array = [];
+		$size = Binary::readInt($this->read(4));
+		for($i = 0; $i < $size; ++$i){
+			$array[] = Binary::readInt($this->read(4));
+		}
+		return $array;
+	}
+
+	public function readLongArray() : array{
+		$type = $this->consumeExpectedType();
+		assert($type === self::TAG_LongArray, "Mismatched tag type, was actually \\x" . bin2hex($type));
+		$array = [];
+		$size = Binary::readInt($this->read(4));
+		for($i = 0; $i < $size; ++$i){
+			$array[] = Binary::readLong($this->read(8));
+		}
+		return $array;
+	}
+
 
 	private function consumeExpectedType() : string{
 		if($this->surfaceContext[self::CONTEXT_INDEX_CONTEXT_TYPE] === self::CONTEXT_COMPOUND){
@@ -64,8 +167,14 @@ class NbtReader implements NbtTagConsts{
 		}
 	}
 
-	private function readValueByType(string $type){
+	private function pushContext(array $context){
+		$this->contextStack[] = $this->surfaceContext;
+		$this->surfaceContext = $context;
+	}
 
+	private function popContext(int $context){
+		assert($this->surfaceContext[self::CONTEXT_INDEX_CONTEXT_TYPE] === $context);
+		$this->surfaceContext = array_pop($this->contextStack);
 	}
 
 
@@ -108,7 +217,6 @@ class NbtReader implements NbtTagConsts{
 		$this->inputBufferOffset = 0;
 		return $ret;
 	}
-
 
 	private function internalReadString() : string{
 		$length = Binary::readShort($this->read(2));

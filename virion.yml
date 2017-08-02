@@ -1,5 +1,5 @@
 name: nbtstreams
 version: 0.0.0
 antigen: sofe\nbtstreams
-php: [7.0]
+php: [7.0] # only supports 64-bit systems
 author: SOFe

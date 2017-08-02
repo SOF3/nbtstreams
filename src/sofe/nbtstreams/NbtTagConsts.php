@@ -17,6 +17,11 @@ declare(strict_types=1);
 
 namespace sofe\nbtstreams;
 
+if(PHP_INT_SIZE < 8){
+	echo "nbstreams only works on 64-bit systems\n";
+	exit(1);
+}
+
 interface NbtTagConsts{
 	const TAG_End = "\x0";
 	const TAG_Byte = "\x1";
