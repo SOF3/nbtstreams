@@ -30,6 +30,7 @@ class NbtReader implements NbtTagConsts{
 	const CONTEXT_INDEX_TAG_TYPE = 1; // dynamic string|null for compound entries, consistent string for list entries
 	const CONTEXT_INDEX_TAG_COUNT = 2; // void for compound entries, dynamic int for list entries
 
+
 	public function __construct(string $file){
 		$this->is = gzopen($file, "rb");
 	}
@@ -58,7 +59,7 @@ class NbtReader implements NbtTagConsts{
 		$this->popContext(self::CONTEXT_COMPOUND);
 	}
 
-	public function startList(){
+	public function startList(string &$subtype = "", int &$size = 0){
 		$type = $this->consumeExpectedType();
 		assert($type === self::TAG_Long, "Mismatched tag type, was actually \\x" . bin2hex($type));
 		$subtype = $this->read(1);
@@ -69,6 +70,27 @@ class NbtReader implements NbtTagConsts{
 	public function endList(){
 		assert($this->surfaceContext[self::CONTEXT_INDEX_TAG_COUNT] === 0, "Did not read all list tag entries");
 		$this->popContext(self::CONTEXT_LIST);
+	}
+
+	public function readValue(string $type){
+		static $typeToMethod = [
+			self::TAG_Byte => "readByte",
+			self::TAG_Short => "readShort",
+			self::TAG_Int => "readInt",
+			self::TAG_Long => "readLong",
+			self::TAG_Float => "readFloat",
+			self::TAG_Double => "readDouble",
+			self::TAG_ByteArray => "readByteArray",
+			self::TAG_String => "readString",
+			self::TAG_IntArray => "readIntArray",
+			self::TAG_LongArray => "readLongArray",
+		];
+
+		if(!isset($typeToMethod[$type])){
+			throw new \RuntimeException("Type \\x" . bin2hex($type) . " not supported by readValue");
+		}
+		$callable = [$this, $typeToMethod[$type]];
+		return $callable();
 	}
 
 	public function readByte() : int{
