@@ -23,8 +23,8 @@ $nbtWriter
     $nbtWriter->endCompound()
 ->close();
 
-$nbtReader = new NbtReader();
-$name = $nbtReader->readName();
+$nbt = new NbtReader();
+$name = $nbt->readName();
 assert($name === "Example");
 $nbt->startCompound();
 $example = [];
@@ -48,6 +48,8 @@ while(($name = $nbt->readName($type)) !== null){
             break;
     }
 }
+$nbt->endCompound();
+$nbt->close();
 ```
 
 Advantages of using nbtstreams over the traditional NBT class from PocketMine:
