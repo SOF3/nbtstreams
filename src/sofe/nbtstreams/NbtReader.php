@@ -93,10 +93,11 @@ class NbtReader implements NbtTagConsts{
 		return $callable();
 	}
 
-	public function readByte() : int{
+	public function readByte($signed = true) : int{
 		$type = $this->consumeExpectedType();
 		assert($type === self::TAG_Byte, "Mismatched tag type, was actually \\x" . bin2hex($type));
-		return ord($this->read(1));
+		$ord = ord($this->read(1));
+		return $signed && ($ord & 0x80) ? ($ord & ~0x7F) : $ord;
 	}
 
 	public function readShort() : int{
