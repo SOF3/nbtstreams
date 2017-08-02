@@ -2,7 +2,8 @@
 
 ## [Unreleased] - 0.1.0
 ### Added
-- Method to get size and type in `NbtReader::startList()`
+- Resolve size and type with pass-by-ref args in `NbtReader::startList()`
+- `NbtReader::peekInt()` for sizes of lists and arrays
 
 ## 0.0.0 - 2017/08/02
 Initial development release

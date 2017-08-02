@@ -136,6 +136,10 @@ class NbtReader implements NbtTagConsts{
 		return $this->read($size);
 	}
 
+	public function peekInt() : int{
+		return Binary::readInt($this->peek(4));
+	}
+
 	public function generateByteArrayReader(int $bufferSize = 2048) : \Generator{
 		$type = $this->consumeExpectedType();
 		assert($type === self::TAG_ByteArray, "Mismatched tag type, was actually \\x" . bin2hex($type));
