@@ -1,7 +1,7 @@
 nbtstreams
 ==========
 
-This library implements an NBT parser and an NBT exporter in a stream syle.
+This library implements an NBT parser and an NBT exporter in a stream style.
 
 Usage (this example uses special indentation for the sake of readability):
 
