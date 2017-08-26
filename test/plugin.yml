@@ -1,0 +1,4 @@
+name: nbtstreams-test
+version: 0.1.0
+api: [3.0.0-ALPHA7]
+main: viriontest\sofe\nbtstreams\Test

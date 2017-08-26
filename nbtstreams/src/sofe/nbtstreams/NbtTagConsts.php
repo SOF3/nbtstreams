@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace sofe\nbtstreams;
 
 if(PHP_INT_SIZE < 8){
-	echo "nbstreams only works on 64-bit systems\n";
+	echo "nbtstreams only works on 64-bit systems\n";
 	exit(1);
 }
 

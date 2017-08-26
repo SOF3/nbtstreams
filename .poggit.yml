@@ -2,3 +2,9 @@ projects:
   nbtstreams:
     type: library
     model: virion
+    path: nbtstreams
+  nbtstreams-test:
+    path: test
+    libs:
+      - src: /nbtstreams
+        version: "^0.1"

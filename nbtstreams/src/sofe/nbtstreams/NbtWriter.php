@@ -26,7 +26,7 @@ class NbtWriter implements NbtTagConsts{
 	private $os;
 
 	private $contextStack = [];
-	private $surfaceContext = NbtWriter::CONTEXT_COMPOUND;
+	private $surfaceContext = self::CONTEXT_COMPOUND;
 	private $countStack = [];
 	private $surfaceCount = [];
 
@@ -41,7 +41,7 @@ class NbtWriter implements NbtTagConsts{
 	public function startList(int $size, int $type) : NbtWriter{
 		$this->writeTagHeader(self::TAG_List);
 		gzwrite($this->os, chr($type) . Binary::writeInt($size));
-		$this->pushContext(NbtWriter::CONTEXT_LIST);
+		$this->pushContext(self::CONTEXT_LIST);
 
 		assert(call_user_func(function() use ($size){
 			$this->countStack[] = $this->surfaceCount;
@@ -53,7 +53,7 @@ class NbtWriter implements NbtTagConsts{
 	}
 
 	public function endList() : NbtWriter{
-		$this->popContext(NbtWriter::CONTEXT_LIST);
+		$this->popContext(self::CONTEXT_LIST);
 
 		assert($this->surfaceCount === 0, "Did not write enough entries for a list tag");
 
@@ -67,20 +67,21 @@ class NbtWriter implements NbtTagConsts{
 
 	public function startCompound() : NbtWriter{
 		$this->writeTagHeader(self::TAG_Compound);
-		$this->pushContext(NbtWriter::CONTEXT_COMPOUND);
+		$this->pushContext(self::CONTEXT_COMPOUND);
 		return $this;
 	}
 
 	public function endCompound() : NbtWriter{
-		$this->popContext(NbtWriter::CONTEXT_COMPOUND);
+		$this->popContext(self::CONTEXT_COMPOUND);
 		gzwrite($this->os, "\12");
 		return $this;
 	}
 
 
 	public function name(string $name) : NbtWriter{
-		assert(!isset($this->name), "Writing name twice without writing the value");
+		assert($this->name === null, "Writing name twice without writing the value");
 		$this->name = $name;
+		return $this;
 	}
 
 
@@ -160,7 +161,7 @@ class NbtWriter implements NbtTagConsts{
 		$fh = fopen($file, "wb");
 		$generator = $this->generateByteArrayWriter($filesize);
 		while(!feof($fh)){
-			$generator->send(fread($fh, (yield) ?? 2048));
+			$generator->send(fread($fh, yield ?? 2048));
 		}
 		fclose($fh);
 		return $this;
@@ -204,7 +205,7 @@ class NbtWriter implements NbtTagConsts{
 	private function writeTagHeader(string $type){
 		assert(strlen($type) === 1);
 		assert(call_user_func(function(){
-			if($this->surfaceContext === NbtWriter::CONTEXT_LIST){
+			if($this->surfaceContext === self::CONTEXT_LIST){
 				--$this->surfaceCount;
 				if($this->surfaceCount < 0){
 					return false;
@@ -212,7 +213,7 @@ class NbtWriter implements NbtTagConsts{
 			}
 			return true;
 		}), "Wrote too many entries for a list tag");
-		if($this->surfaceContext !== NbtWriter::CONTEXT_LIST){
+		if($this->surfaceContext !== self::CONTEXT_LIST){
 			gzwrite($this->os, chr($type));
 			assert($this->name !== null, "name must be set for compound tag entry");
 			$this->internalWriteString($this->name);

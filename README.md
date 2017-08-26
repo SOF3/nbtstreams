@@ -53,5 +53,5 @@ $nbt->close();
 ```
 
 Advantages of using nbtstreams over the traditional NBT class from PocketMine:
-* **Performs better** because there is no need to read the whole file before executing parts of it; can spread the file reading into ticks
+* **Improves performance** because there is no need to read the whole file before executing parts of it; can spread the file reading into ticks
 * **Prevents memory leak** because there is no need to store the whole decompressed file in memory before using/saving it.

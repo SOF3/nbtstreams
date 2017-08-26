@@ -186,12 +186,13 @@ class NbtReader implements NbtTagConsts{
 			$ret = $this->surfaceContext[self::CONTEXT_INDEX_TAG_TYPE];
 			$this->surfaceContext[self::CONTEXT_INDEX_TAG_TYPE] = null;
 			return $ret;
-		}else{ // CONTEXT_LIST
-			if((--$this->surfaceContext[self::CONTEXT_INDEX_TAG_COUNT]) < 0){
-				throw new \UnderflowException("The list tag has already ended!");
-			}
-			return $this->surfaceContext[self::CONTEXT_INDEX_TAG_TYPE];
 		}
+
+		// CONTEXT_LIST
+		if((--$this->surfaceContext[self::CONTEXT_INDEX_TAG_COUNT]) < 0){
+			throw new \UnderflowException("The list tag has already ended!");
+		}
+		return $this->surfaceContext[self::CONTEXT_INDEX_TAG_TYPE];
 	}
 
 	private function pushContext(array $context){
@@ -214,7 +215,7 @@ class NbtReader implements NbtTagConsts{
 		$output = "";
 		while(true){
 			if(gzeof($this->is)){
-				throw new \UnderflowException();
+				throw new \UnderflowException("End of NBT stream");
 			}
 			$tmp = $this->refreshBuffer();
 			$length -= strlen($tmp);
@@ -225,13 +226,13 @@ class NbtReader implements NbtTagConsts{
 				return $output;
 			}
 		}
-		throw new \LogicException();
+		throw new \LogicException("This exception will never be thrown");
 	}
 
 	private function peek(int $length) : string{
 		while(strlen($this->inputBuffer) < $this->inputBufferOffset + $length){
 			if(gzeof($this->is)){
-				throw new \UnderflowException();
+				throw new \UnderflowException("End of NBT stream");
 			}
 			$this->inputBuffer .= gzread($this->is, 2048);
 		}

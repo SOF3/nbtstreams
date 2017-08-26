@@ -8,6 +8,9 @@
 ### Changed
 - `NbtReader::readByte()` now defaults to reading signed bytes as per Minecraft Wiki specification
 
+### Fixed
+- Fixed missing return statement in `NbtReader::name()`
+
 ## 0.0.0 - 2017/08/02
 Initial development release
 
